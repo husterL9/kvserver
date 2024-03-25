@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 
@@ -25,12 +26,29 @@ func NewServer(store *kvstore.KVStore) *server {
 
 // Set实现了KVStoreService的Set方法
 func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
+	fmt.Println("11=======================deeee", req)
 	meta := kvstore.MetaData{
 		Type:     kvstore.DataType(req.Meta.Type),
 		Location: req.Meta.Location,
 	}
+	fmt.Println("=======================deeee", meta)
 	s.store.Set(req.Key, req.Value, meta)
 	return &pb.SetResponse{Success: true}, nil
+}
+
+// Get 实现了KVStoreService接口中的Get方法
+func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
+
+	// 从KVStore中检索键对应的值
+	item, exists := s.store.Get(req.GetKey())
+	if !exists {
+		// 如果键不存在，可以返回一个错误或一个空的响应
+		log.Printf("Key not found: %s", req.GetKey())
+		return nil, nil // 或者返回错误: status.Errorf(codes.NotFound, "key not found: %s", req.GetKey())
+	}
+
+	// 如果键存在，返回找到的值
+	return &pb.GetResponse{Value: item.Value}, nil
 }
 
 // 启动gRPC服务器

@@ -5,22 +5,14 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 
+	pb "github.com/husterL9/kvserver/internal/api/protobuf"
 	"github.com/husterL9/kvserver/internal/client"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Println("Usage: client [key] [value]", os.Args)
-		os.Exit(1)
-	}
-	key := os.Args[1]
-	value := os.Args[2]
-
 	// 连接到gRPC服务
 	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
@@ -29,16 +21,19 @@ func main() {
 	defer conn.Close()
 
 	c := client.NewKVStoreClient(conn)
-
+	meta := &pb.MetaData{
+		Type:     pb.DataType_BLOCK_DEVICE, // 或 DataType_File、DataType_BlockDevice
+		Location: "data/set_test.txt",      // 对于File和BlockDevice类型
+	}
 	// 设置键值对
-	success, err := c.Set(key, value)
+	success, err := c.Set("2", "hello文件12345", meta)
 	if err != nil {
 		log.Fatalf("could not set key-value: %v", err)
 	}
 	fmt.Printf("Set result: %v\n", success)
 
 	// 获取键值对
-	gotValue, err := c.Get(key)
+	gotValue, err := c.Get("2")
 	if err != nil {
 		log.Fatalf("could not get value: %v", err)
 	}

@@ -52,7 +52,7 @@ func NewKVStore(fsRootDir, blockDevicePath string) *KVStore {
 func (kv *KVStore) Set(key string, value []byte, meta MetaData) {
 	kv.lock.Lock()
 	defer kv.lock.Unlock()
-
+	fmt.Println("================", meta)
 	switch meta.Type {
 	case KVObj:
 		kv.store[key] = Item{Key: key, Value: value, Meta: meta}
@@ -60,12 +60,19 @@ func (kv *KVStore) Set(key string, value []byte, meta MetaData) {
 		err := kv.fsAdapter.WriteFile(meta.Location, value)
 		if err != nil {
 			log.Printf("Error writing file: %v", err)
+		} else {
+			kv.store[key] = Item{Key: key, Value: value, Meta: meta}
 		}
 	case BlockDevice:
 		// 为简化示例，这里直接将偏移量设置为0，实际应用中可能需要更复杂的逻辑
 		err := kv.blockDeviceAdapter.WriteBlock(0, value)
 		if err != nil {
 			log.Printf("Error writing block device: %v", err)
+		} else {
+			// 块设备写入成功，保存引用和元数据到KV存储中
+			// 注意：这里我们可能会存储一个表示数据位置或描述的信息，而不是数据本身
+			// 这是因为直接从块设备读取数据可能需要特定的上下文或操作
+			kv.store[key] = Item{Key: key, Value: []byte("Block device data at offset 0"), Meta: meta}
 		}
 	default:
 		log.Printf("Unsupported data type: %v", meta.Type)
