@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 
@@ -26,12 +25,12 @@ func NewServer(store *kvstore.KVStore) *server {
 
 // Set实现了KVStoreService的Set方法
 func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
-	fmt.Println("11=======================deeee", req)
 	meta := kvstore.MetaData{
 		Type:     kvstore.DataType(req.Meta.Type),
 		Location: req.Meta.Location,
+		Offset:   req.Meta.Offset,
+		Size:     req.Meta.Size,
 	}
-	fmt.Println("=======================deeee", meta)
 	s.store.Set(req.Key, req.Value, meta)
 	return &pb.SetResponse{Success: true}, nil
 }

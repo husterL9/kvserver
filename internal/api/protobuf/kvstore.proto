@@ -50,7 +50,9 @@ message DeleteResponse {
 // 元数据信息，包括数据类型和位置（对于文件和块设备）
 message MetaData {
     DataType type = 1;
-    string location = 2;
+    string location = 2;	
+    int64 offset=3;    // 读/写操作的起始偏移量
+	int64 size=4;   // 读/写操作的数据长度
 }
 
 // 数据类型枚举

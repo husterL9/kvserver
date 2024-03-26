@@ -23,17 +23,19 @@ func main() {
 	c := client.NewKVStoreClient(conn)
 	meta := &pb.MetaData{
 		Type:     pb.DataType_BLOCK_DEVICE, // 或 DataType_File、DataType_BlockDevice
-		Location: "data/set_test.txt",      // 对于File和BlockDevice类型
+		Location: "",                       // 对于File和BlockDevice类型
+		Offset:   1,
+		Size:     1,
 	}
 	// 设置键值对
-	success, err := c.Set("2", "hello文件12345", meta)
+	success, err := c.Set("3", "2", meta)
 	if err != nil {
 		log.Fatalf("could not set key-value: %v", err)
 	}
 	fmt.Printf("Set result: %v\n", success)
 
 	// 获取键值对
-	gotValue, err := c.Get("2")
+	gotValue, err := c.Get("3")
 	if err != nil {
 		log.Fatalf("could not get value: %v", err)
 	}

@@ -22,6 +22,8 @@ const (
 type MetaData struct {
 	Type     DataType // 对象类型: KVObj, File, 或 BlockDevice
 	Location string   // 文件或块设备的位置信息（对于KV对象，此字段可以为空）
+	Offset   int64    // 读/写操作的起始偏移量
+	Size     int64    // 读/写操作的数据长度
 }
 
 // Item 表示存储在内存中的键值对项
@@ -61,11 +63,11 @@ func (kv *KVStore) Set(key string, value []byte, meta MetaData) {
 		if err != nil {
 			log.Printf("Error writing file: %v", err)
 		} else {
-			kv.store[key] = Item{Key: key, Value: value, Meta: meta}
+			kv.store[key] = Item{Key: key, Value: []byte("file data at offset 0"), Meta: meta}
 		}
 	case BlockDevice:
-		// 为简化示例，这里直接将偏移量设置为0，实际应用中可能需要更复杂的逻辑
-		err := kv.blockDeviceAdapter.WriteBlock(0, value)
+		fmt.Println("meta.Offset", meta.Offset)
+		err := kv.blockDeviceAdapter.WriteBlock(meta.Offset, value)
 		if err != nil {
 			log.Printf("Error writing block device: %v", err)
 		} else {
@@ -97,8 +99,7 @@ func (kv *KVStore) Get(key string) (Item, bool) {
 		}
 		item.Value = data
 	case BlockDevice:
-		// 为简化示例，这里直接将偏移量设置为0，并假定读取长度为1024，实际应用中可能需要更复杂的逻辑
-		data, err := kv.blockDeviceAdapter.ReadBlock(0, 1024)
+		data, err := kv.blockDeviceAdapter.ReadBlock(0, 3)
 		if err != nil {
 			log.Printf("Error reading block device: %v", err)
 			return Item{}, false

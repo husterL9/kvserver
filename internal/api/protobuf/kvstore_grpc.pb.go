@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.12.4
-// source: kvstore.proto
+// source: internal/api/protobuf/kvstore.proto
 
 package protobuf
 
@@ -185,5 +185,5 @@ var KVStoreService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "kvstore.proto",
+	Metadata: "internal/api/protobuf/kvstore.proto",
 }
