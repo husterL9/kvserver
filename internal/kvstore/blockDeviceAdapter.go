@@ -6,20 +6,17 @@ import (
 
 // BlockDeviceAdapter 提供了对块设备的基本操作
 type BlockDeviceAdapter struct {
-	DevicePath string // 块设备的设备文件路径，例如 "/dev/sda1"
 }
 
 // NewBlockDeviceAdapter 创建一个新的BlockDeviceAdapter实例
-func NewBlockDeviceAdapter(devicePath string) *BlockDeviceAdapter {
-	return &BlockDeviceAdapter{
-		DevicePath: devicePath,
-	}
+func NewBlockDeviceAdapter() *BlockDeviceAdapter {
+	return &BlockDeviceAdapter{}
 }
 
 // ReadBlock 从块设备读取数据
 func (bda *BlockDeviceAdapter) ReadBlock(offset, size int64) ([]byte, error) {
 	// 打开设备文件
-	file, err := os.Open(bda.DevicePath)
+	file, err := os.Open("")
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +41,7 @@ func (bda *BlockDeviceAdapter) ReadBlock(offset, size int64) ([]byte, error) {
 // WriteBlock 向块设备写入数据
 func (bda *BlockDeviceAdapter) WriteBlock(offset int64, data []byte) error {
 	// 以读写模式打开设备文件
-	file, err := os.OpenFile(bda.DevicePath, os.O_RDWR, 0666)
+	file, err := os.OpenFile("", os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}

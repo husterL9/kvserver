@@ -28,11 +28,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type KVStoreServiceClient interface {
-	// Set方法用于设置键值对
+	// 设置键值对
 	Set(ctx context.Context, in *SetRequest, opts ...grpc.CallOption) (*SetResponse, error)
-	// Get方法用于获取键值对的值
+	// 获取键值对的值
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
-	// Delete方法用于删除键值对
+	// 删除键值对
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 }
 
@@ -75,11 +75,11 @@ func (c *kVStoreServiceClient) Delete(ctx context.Context, in *DeleteRequest, op
 // All implementations must embed UnimplementedKVStoreServiceServer
 // for forward compatibility
 type KVStoreServiceServer interface {
-	// Set方法用于设置键值对
+	// 设置键值对
 	Set(context.Context, *SetRequest) (*SetResponse, error)
-	// Get方法用于获取键值对的值
+	// 获取键值对的值
 	Get(context.Context, *GetRequest) (*GetResponse, error)
-	// Delete方法用于删除键值对
+	// 删除键值对
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	mustEmbedUnimplementedKVStoreServiceServer()
 }

@@ -2,15 +2,14 @@ syntax = "proto3";
 
 package kvstore;
 
-option go_package = "github.com/github.com/husterL9/kvserver/internal/api/protobuf";
+option go_package = "internal/api/protobuf";
 
-// 定义一个键值存储服务
 service KVStoreService {
-    // Set方法用于设置键值对
+    // 设置键值对
     rpc Set(SetRequest) returns (SetResponse) {}
-    // Get方法用于获取键值对的值
+    // 获取键值对的值
     rpc Get(GetRequest) returns (GetResponse) {}
-    // Delete方法用于删除键值对
+    // 删除键值对
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
 }
 
@@ -21,23 +20,21 @@ message SetRequest {
     MetaData meta = 3;
 }
 
-// Set响应
 message SetResponse {
     bool success = 1;
 }
 
-// Get请求只需要键
 message GetRequest {
     string key = 1;
+    int64 clientId=2;
+    int64 opId=3;
 }
 
-// Get响应返回值和元数据
 message GetResponse {
     bytes value = 1;
-    MetaData meta = 2;
+    bool success=2;
 }
 
-// Delete请求
 message DeleteRequest {
     string key = 1;
 }
@@ -47,7 +44,7 @@ message DeleteResponse {
     bool success = 1;
 }
 
-// 元数据信息，包括数据类型和位置（对于文件和块设备）
+// 元数据信息
 message MetaData {
     DataType type = 1;
     string location = 2;	
@@ -55,7 +52,6 @@ message MetaData {
 	int64 size=4;   // 读/写操作的数据长度
 }
 
-// 数据类型枚举
 enum DataType {
     KV_OBJ = 0;
     FILE = 1;

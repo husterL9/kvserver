@@ -35,7 +35,7 @@ func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, 
 	return &pb.SetResponse{Success: true}, nil
 }
 
-// Get 实现了KVStoreService接口中的Get方法
+// Get
 func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
 
 	// 从KVStore中检索键对应的值
@@ -47,7 +47,7 @@ func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 	}
 
 	// 如果键存在，返回找到的值
-	return &pb.GetResponse{Value: item.Value}, nil
+	return &pb.GetResponse{Value: item.Value, Success: exists}, nil
 }
 
 // 启动gRPC服务器

@@ -3,10 +3,11 @@ package kvstore
 import (
 	"fmt"
 	"log"
+	"path/filepath"
 	"sync"
 )
 
-// DataType 表示存储在KV存储中的数据类型
+// 存储在KV存储中的数据类型
 type DataType int
 
 const (
@@ -32,6 +33,12 @@ type Item struct {
 	Value []byte
 	Meta  MetaData
 }
+type OpRecord struct {
+	OpId   int64  // 操作ID
+	OpType string // 操作类型
+	Value  string // 操作的值
+	Result string // 操作结果
+}
 
 // KVStore 表示内存键值存储引擎的主结构
 type KVStore struct {
@@ -40,26 +47,34 @@ type KVStore struct {
 	lock               sync.RWMutex
 	fsAdapter          *FileSystemAdapter  // 确保这一行正确无误
 	blockDeviceAdapter *BlockDeviceAdapter // 如果需要处理块设备，也包括这一行
+	latestOp           map[int64]int64     // 客户端ID映射到其最新操作ID
+	opHistory          map[int64][]OpRecord
 }
 
 // NewKVStore 创建并返回一个新的KVStore实例
-func NewKVStore(fsRootDir, blockDevicePath string) *KVStore {
-	return &KVStore{
-		store:              make(map[string]Item),
-		fsAdapter:          NewFileSystemAdapter(fsRootDir),
-		blockDeviceAdapter: NewBlockDeviceAdapter(blockDevicePath),
+func NewKVStore() *KVStore {
+	rootDir, _ := filepath.Abs("./internal/kvstore/fakeRoot")
+	store := make(map[string]Item)
+	fsAdapter := NewFileSystemAdapter(store)
+	fsAdapter.LoadFile(rootDir)
+	blockDeviceAdapter := NewBlockDeviceAdapter()
+	kv := &KVStore{
+		store:              store,
+		fsAdapter:          fsAdapter,
+		blockDeviceAdapter: blockDeviceAdapter,
 	}
+	return kv
 }
 
 func (kv *KVStore) Set(key string, value []byte, meta MetaData) {
 	kv.lock.Lock()
 	defer kv.lock.Unlock()
-	fmt.Println("================", meta)
 	switch meta.Type {
 	case KVObj:
 		kv.store[key] = Item{Key: key, Value: value, Meta: meta}
 	case File:
-		err := kv.fsAdapter.WriteFile(meta.Location, value)
+		// err := kv.fsAdapter.WriteFile(meta.Location, value)
+		err := error(nil)
 		if err != nil {
 			log.Printf("Error writing file: %v", err)
 		} else {
@@ -81,33 +96,33 @@ func (kv *KVStore) Set(key string, value []byte, meta MetaData) {
 	}
 }
 
-func (kv *KVStore) Get(key string) (Item, bool) {
+func (kv *KVStore) Get(args GetArgs) (GetResponse, bool) {
 	kv.lock.RLock()
 	defer kv.lock.RUnlock()
-
+	key, clientId, opId := args
 	item, exists := kv.store[key]
 	if !exists {
-		return Item{}, false
+		return GetResponse{}, false
 	}
-
+	resp := GetResponse{}
 	switch item.Meta.Type {
 	case File:
-		data, err := kv.fsAdapter.ReadFile(item.Meta.Location)
+		data, err := kv.fsAdapter.ReadFile(key)
 		if err != nil {
 			log.Printf("Error reading file: %v", err)
-			return Item{}, false
+			return GetResponse{}, false
 		}
-		item.Value = data
+		resp.Value = data
 	case BlockDevice:
 		data, err := kv.blockDeviceAdapter.ReadBlock(0, 3)
 		if err != nil {
 			log.Printf("Error reading block device: %v", err)
-			return Item{}, false
+			return GetResponse{}, false
 		}
-		item.Value = data
+		resp.Value = data
 	}
 
-	return item, true
+	return resp, true
 }
 
 // Delete 根据键删除一个键值对
@@ -122,22 +137,16 @@ func (kv *KVStore) Delete(key string) error {
 
 	switch item.Meta.Type {
 	case KVObj:
-		// 对于普通键值对，直接从存储中删除
 		delete(kv.store, key)
 	case File:
-		// 对于文件类型，需要删除文件系统中的文件
-		err := kv.fsAdapter.DeleteFile(item.Meta.Location)
+		// err := kv.fsAdapter.DeleteFile(item.Meta.Location)
+		err := error(nil)
 		if err != nil {
 			return fmt.Errorf("error deleting file: %v", err)
 		}
-		// 从存储中删除条目
 		delete(kv.store, key)
 	case BlockDevice:
-		// 对于块设备，可能需要执行特定的清除操作
-		// 注意：这里我们只是示意性地展示了接口，实际上块设备不应简单地“删除”
-		// 可能需要根据实际场景实现适当的逻辑，这里不做具体实现
 		log.Printf("Block device delete operation is not implemented")
-		// 仍然从存储中删除条目，即使块设备的“删除”可能并未实际执行
 		delete(kv.store, key)
 	default:
 		return fmt.Errorf("unsupported data type: %v", item.Meta.Type)
