@@ -11,6 +11,8 @@ service KVStoreService {
     rpc Get(GetRequest) returns (GetResponse) {}
     // 删除键值对
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+    // 追加数据到键值对
+    rpc Append(AppendRequest) returns (AppendResponse) {}
 }
 
 // Set请求包含键、值和元数据
@@ -41,6 +43,18 @@ message DeleteRequest {
 
 // Delete响应
 message DeleteResponse {
+    bool success = 1;
+}
+
+// Append请求
+message AppendRequest {
+    string key = 1;
+    bytes value = 2; // 追加的数据
+    MetaData meta = 3;
+}
+
+// Append响应
+message AppendResponse {
     bool success = 1;
 }
 

@@ -36,8 +36,8 @@ type Item struct {
 type OpRecord struct {
 	OpId   int64  // 操作ID
 	OpType string // 操作类型
-	Value  string // 操作的值
-	Result string // 操作结果
+	Value  []byte // 操作的值
+	Result []byte // 操作结果
 }
 
 // KVStore 表示内存键值存储引擎的主结构
@@ -45,9 +45,9 @@ type KVStore struct {
 	// 使用map来存储键值对，加锁以支持并发访问
 	store              map[string]Item
 	lock               sync.RWMutex
-	fsAdapter          *FileSystemAdapter  // 确保这一行正确无误
-	blockDeviceAdapter *BlockDeviceAdapter // 如果需要处理块设备，也包括这一行
-	latestOp           map[int64]int64     // 客户端ID映射到其最新操作ID
+	fsAdapter          *FileSystemAdapter
+	blockDeviceAdapter *BlockDeviceAdapter
+	latestOp           map[int64]int64 // 客户端ID映射到其最新操作ID
 	opHistory          map[int64][]OpRecord
 }
 
@@ -56,7 +56,10 @@ func NewKVStore() *KVStore {
 	rootDir, _ := filepath.Abs("./internal/kvstore/fakeRoot")
 	store := make(map[string]Item)
 	fsAdapter := NewFileSystemAdapter(store)
-	fsAdapter.LoadFile(rootDir)
+	// 异步加载文件
+	go func() {
+		fsAdapter.LoadFile(rootDir)
+	}()
 	blockDeviceAdapter := NewBlockDeviceAdapter()
 	kv := &KVStore{
 		store:              store,
@@ -86,9 +89,6 @@ func (kv *KVStore) Set(key string, value []byte, meta MetaData) {
 		if err != nil {
 			log.Printf("Error writing block device: %v", err)
 		} else {
-			// 块设备写入成功，保存引用和元数据到KV存储中
-			// 注意：这里我们可能会存储一个表示数据位置或描述的信息，而不是数据本身
-			// 这是因为直接从块设备读取数据可能需要特定的上下文或操作
 			kv.store[key] = Item{Key: key, Value: []byte("Block device data at offset 0"), Meta: meta}
 		}
 	default:
@@ -99,30 +99,81 @@ func (kv *KVStore) Set(key string, value []byte, meta MetaData) {
 func (kv *KVStore) Get(args GetArgs) (GetResponse, bool) {
 	kv.lock.RLock()
 	defer kv.lock.RUnlock()
-	key, clientId, opId := args
+	resp := GetResponse{}
+	key, clientId, opId := args.Key, args.ClientId, args.OpId
+	latestOpId, ok := kv.latestOp[clientId]
+	item, exists := kv.store[key]
+	// 检查是否是重复或过时的请求
+	if !ok || opId > latestOpId {
+		if !exists {
+			return resp, false
+		}
+		switch item.Meta.Type {
+		case KVObj:
+			resp.Value = item.Value
+		case File:
+			data, err := kv.fsAdapter.ReadFile(key)
+			if err != nil {
+				log.Printf("Error reading file: %v", err)
+				return resp, false
+			}
+			resp.Value = data
+		case BlockDevice:
+			data, err := kv.blockDeviceAdapter.ReadBlock(0, 3)
+			if err != nil {
+				log.Printf("Error reading block device: %v", err)
+				return resp, false
+			}
+			resp.Value = data
+		}
+
+		return resp, true
+	}
+	//如果 args.OpId = latestOpId,则这个请求是重复的
+	if !ok || opId == latestOpId {
+		//返回最新的操作结果
+		for _, record := range kv.opHistory[args.ClientId] {
+			if record.OpId == args.OpId {
+				resp.Value = record.Result
+				return resp, true
+			}
+		}
+	}
+	return resp, false
+}
+
+func (kv *KVStore) Append(key string, value []byte, meta MetaData) error {
+	kv.lock.Lock()
+	defer kv.lock.Unlock()
+
+	// 检查键是否存在
 	item, exists := kv.store[key]
 	if !exists {
-		return GetResponse{}, false
-	}
-	resp := GetResponse{}
-	switch item.Meta.Type {
-	case File:
-		data, err := kv.fsAdapter.ReadFile(key)
-		if err != nil {
-			log.Printf("Error reading file: %v", err)
-			return GetResponse{}, false
-		}
-		resp.Value = data
-	case BlockDevice:
-		data, err := kv.blockDeviceAdapter.ReadBlock(0, 3)
-		if err != nil {
-			log.Printf("Error reading block device: %v", err)
-			return GetResponse{}, false
-		}
-		resp.Value = data
+		// 如果键不存在，创建新的键
+		kv.store[key] = Item{Key: key, Value: value, Meta: meta}
+		return nil
 	}
 
-	return resp, true
+	// 检查是否为文件或块设备，因为它们的追加行为可能不同
+	switch meta.Type {
+	case KVObj:
+		// 直接追加到现有值
+		item.Value = append(item.Value, value...)
+		kv.store[key] = item
+	case File:
+		// // 对于文件，调用文件系统适配器来追加数据
+		// err := kv.fsAdapter.AppendFile(meta.Location, value)
+		// if err != nil {
+		// 	return fmt.Errorf("error appending to file: %v", err)
+		// }
+	case BlockDevice:
+		// 对于块设备，你可能需要处理不同的逻辑或者不支持追加
+		return fmt.Errorf("append operation not supported for block devices")
+	default:
+		return fmt.Errorf("unsupported data type: %v", meta.Type)
+	}
+
+	return nil
 }
 
 // Delete 根据键删除一个键值对

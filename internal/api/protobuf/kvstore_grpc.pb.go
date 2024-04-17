@@ -22,6 +22,7 @@ const (
 	KVStoreService_Set_FullMethodName    = "/kvstore.KVStoreService/Set"
 	KVStoreService_Get_FullMethodName    = "/kvstore.KVStoreService/Get"
 	KVStoreService_Delete_FullMethodName = "/kvstore.KVStoreService/Delete"
+	KVStoreService_Append_FullMethodName = "/kvstore.KVStoreService/Append"
 )
 
 // KVStoreServiceClient is the client API for KVStoreService service.
@@ -34,6 +35,8 @@ type KVStoreServiceClient interface {
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	// 删除键值对
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	// 追加数据到键值对
+	Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error)
 }
 
 type kVStoreServiceClient struct {
@@ -71,6 +74,15 @@ func (c *kVStoreServiceClient) Delete(ctx context.Context, in *DeleteRequest, op
 	return out, nil
 }
 
+func (c *kVStoreServiceClient) Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error) {
+	out := new(AppendResponse)
+	err := c.cc.Invoke(ctx, KVStoreService_Append_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KVStoreServiceServer is the server API for KVStoreService service.
 // All implementations must embed UnimplementedKVStoreServiceServer
 // for forward compatibility
@@ -81,6 +93,8 @@ type KVStoreServiceServer interface {
 	Get(context.Context, *GetRequest) (*GetResponse, error)
 	// 删除键值对
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	// 追加数据到键值对
+	Append(context.Context, *AppendRequest) (*AppendResponse, error)
 	mustEmbedUnimplementedKVStoreServiceServer()
 }
 
@@ -96,6 +110,9 @@ func (UnimplementedKVStoreServiceServer) Get(context.Context, *GetRequest) (*Get
 }
 func (UnimplementedKVStoreServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedKVStoreServiceServer) Append(context.Context, *AppendRequest) (*AppendResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Append not implemented")
 }
 func (UnimplementedKVStoreServiceServer) mustEmbedUnimplementedKVStoreServiceServer() {}
 
@@ -164,6 +181,24 @@ func _KVStoreService_Delete_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KVStoreService_Append_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVStoreServiceServer).Append(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVStoreService_Append_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVStoreServiceServer).Append(ctx, req.(*AppendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KVStoreService_ServiceDesc is the grpc.ServiceDesc for KVStoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -182,6 +217,10 @@ var KVStoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _KVStoreService_Delete_Handler,
+		},
+		{
+			MethodName: "Append",
+			Handler:    _KVStoreService_Append_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

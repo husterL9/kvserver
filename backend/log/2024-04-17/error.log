@@ -1,0 +1,12 @@
+[east_white_common_admin/server]2024/04/17 - 18:04:56.368	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:39	accept tcp [::]:8889: use of closed network connection
+[east_white_common_admin/server]2024/04/17 - 18:07:19.747	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:39	accept tcp [::]:8889: use of closed network connection
+[east_white_common_admin/server]2024/04/17 - 18:19:06.457	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 18:33:20.158	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 18:36:45.523	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 18:39:14.468	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 18:41:47.872	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 18:46:25.552	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 19:03:03.582	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 19:11:47.952	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 19:21:42.649	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection
+[kvserver-backend/server]2024/04/17 - 19:34:59.512	[31merror[0m	/home/ljw/SE8/kvserver/backend/core/server.go:38	accept tcp [::]:8889: use of closed network connection

@@ -18,12 +18,12 @@ type server struct {
 	pb.UnimplementedKVStoreServiceServer
 }
 
-// NewServer创建一个gRPC服务的实例
+// NewServer
 func NewServer(store *kvstore.KVStore) *server {
 	return &server{store: store}
 }
 
-// Set实现了KVStoreService的Set方法
+// Set
 func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
 	meta := kvstore.MetaData{
 		Type:     kvstore.DataType(req.Meta.Type),
@@ -37,9 +37,13 @@ func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, 
 
 // Get
 func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
-
+	args := kvstore.GetArgs{
+		Key:      req.GetKey(),
+		ClientId: req.GetClientId(),
+		OpId:     req.GetOpId(),
+	}
 	// 从KVStore中检索键对应的值
-	item, exists := s.store.Get(req.GetKey())
+	item, exists := s.store.Get(args)
 	if !exists {
 		// 如果键不存在，可以返回一个错误或一个空的响应
 		log.Printf("Key not found: %s", req.GetKey())
@@ -49,6 +53,14 @@ func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 	// 如果键存在，返回找到的值
 	return &pb.GetResponse{Value: item.Value, Success: exists}, nil
 }
+
+// append
+// func (s *server) Append(ctx context.Context, req *pb.AppendRequest) (*pb.AppendResponse, error) {
+// 	args := kvstore.AppendArgs{
+// 		Key:   req.GetKey(),
+// 		Value: req.GetValue(),
+// 	}
+// }
 
 // 启动gRPC服务器
 func StartGRPCServer(store *kvstore.KVStore, address string) error {

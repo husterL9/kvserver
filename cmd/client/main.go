@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/husterL9/kvserver/internal/client"
+	"github.com/husterL9/kvserver/internal/api/protobuf"
+	"github.com/husterL9/kvserver/internal/kvstore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -20,7 +21,7 @@ func main() {
 	}
 	// defer conn.Close()
 
-	c := client.NewKVStoreClient(conn)
+	c := kvstore.NewKVStoreClient(conn)
 	// 设置键值对
 	// success, err := c.Set("3", "2", meta)
 	// if err != nil {
@@ -29,9 +30,12 @@ func main() {
 	// fmt.Printf("Set result: %v\n", success)
 
 	// 获取键值对
-	gotValue, err := c.Get("/home/ljw/SE8/kvserver/internal/kvstore/fakeRoot/config/config1.txt")
+	c.Set("2", "3", &protobuf.MetaData{})
+	gotValue, err := c.Get("2")
+	gotValue2, _ := c.Get("/home/ljw/SE8/kvserver/internal/kvstore/fakeRoot/config/config1.txt")
 	if err != nil {
 		log.Fatalf("could not get value: %v", err)
 	}
 	fmt.Printf("Got value: %s\n", gotValue)
+	fmt.Printf("Got value: %s\n", gotValue2)
 }

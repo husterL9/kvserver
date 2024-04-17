@@ -97,6 +97,10 @@ func (fsa *FileSystemAdapter) WriteFile(path string, data []byte) error {
 	return nil
 }
 
+// func (fsa *FileSystemAdapter) AppendFile(path string, data []byte) error {
+
+// }
+
 func (fsa *FileSystemAdapter) DeleteFile(path string) error {
 	mmap, ok := fsa.MappedFiles[path]
 	if !ok {
