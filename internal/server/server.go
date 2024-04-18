@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/husterL9/kvserver/internal/api/protobuf" // 替换为你的protobuf包路径
+	pb "github.com/husterL9/kvserver/api/protobuf" // 替换为你的protobuf包路径
 
 	"github.com/husterL9/kvserver/internal/kvstore"
 

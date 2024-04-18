@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"time"
 
-	pb "github.com/husterL9/kvserver/internal/api/protobuf"
+	pb "github.com/husterL9/kvserver/api/protobuf"
 	"github.com/husterL9/kvserver/internal/kvstore"
 
 	"google.golang.org/grpc"

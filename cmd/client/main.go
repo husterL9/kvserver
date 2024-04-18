@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/husterL9/kvserver/api/protobuf"
 	"github.com/husterL9/kvserver/client"
-	"github.com/husterL9/kvserver/internal/api/protobuf"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
