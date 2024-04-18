@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -63,6 +64,7 @@ func (c *KVStoreClient) Get(key string) (string, error) {
 	for {
 		resp, rpcErr := c.client.Get(ctx, &pb.GetRequest{Key: args.Key, ClientId: args.ClientId, OpId: args.OpId})
 		err = rpcErr
+		fmt.Println("resp", resp, "rpcErr", rpcErr)
 		if rpcErr != nil {
 			value = ""
 		}
