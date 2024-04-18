@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/husterL9/kvserver/client"
 	"github.com/husterL9/kvserver/internal/api/protobuf"
-	"github.com/husterL9/kvserver/internal/kvstore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -21,7 +21,7 @@ func main() {
 	}
 	// defer conn.Close()
 
-	c := kvstore.NewKVStoreClient(conn)
+	c := client.NewKVStoreClient(conn)
 	// 设置键值对
 	// success, err := c.Set("3", "2", meta)
 	// if err != nil {

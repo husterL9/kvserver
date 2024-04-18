@@ -1,6 +1,4 @@
-// 文件路径: client/client.go
-
-package kvstore
+package client
 
 import (
 	"context"
@@ -9,6 +7,7 @@ import (
 	"time"
 
 	pb "github.com/husterL9/kvserver/internal/api/protobuf"
+	"github.com/husterL9/kvserver/internal/kvstore"
 
 	"google.golang.org/grpc"
 )
@@ -52,7 +51,7 @@ func (c *KVStoreClient) Set(key, value string, meta *pb.MetaData) (bool, error) 
 func (c *KVStoreClient) Get(key string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	args := GetArgs{
+	args := kvstore.GetArgs{
 		Key:      key,
 		ClientId: c.clientId,
 		OpId:     c.opId,
