@@ -99,9 +99,40 @@ func (fsa *FileSystemAdapter) WriteFile(path string, data []byte) error {
 	return nil
 }
 
-// func (fsa *FileSystemAdapter) AppendFile(path string, data []byte) error {
+func (fsa *FileSystemAdapter) AppendFile(path string, data []byte) error {
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
 
-// }
+	// 获取当前文件大小
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	currentSize := fileInfo.Size()
+
+	// 计算新的文件大小
+	newSize := currentSize + int64(len(data))
+
+	// 扩展文件大小
+	if err := file.Truncate(newSize); err != nil {
+		return err
+	}
+
+	// 重新映射文件
+	mmap, err := unix.Mmap(int(file.Fd()), 0, int(newSize), unix.PROT_READ|unix.PROT_WRITE, unix.MAP_SHARED)
+	if err != nil {
+		return err
+	}
+	defer unix.Munmap(mmap)
+
+	// 将数据追加到映射区域
+	copy(mmap[currentSize:], data)
+
+	return nil
+}
 
 func (fsa *FileSystemAdapter) DeleteFile(path string) error {
 	mmap, ok := fsa.MappedFiles[path]
@@ -117,5 +148,16 @@ func (fsa *FileSystemAdapter) DeleteFile(path string) error {
 	mmap.Data = nil
 	// 从映射中删除条目
 	delete(fsa.MappedFiles, path)
+	return nil
+}
+
+// 创建一个文件
+func (fsa *FileSystemAdapter) CreateFile(path string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("创建文件失败: %v", err)
+	}
+	defer file.Close()
+
 	return nil
 }

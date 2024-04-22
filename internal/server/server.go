@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 
@@ -56,12 +57,22 @@ func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 }
 
 // append
-// func (s *server) Append(ctx context.Context, req *pb.AppendRequest) (*pb.AppendResponse, error) {
-// 	args := kvstore.AppendArgs{
-// 		Key:   req.GetKey(),
-// 		Value: req.GetValue(),
-// 	}
-// }
+func (s *server) Append(ctx context.Context, req *pb.AppendRequest) (*pb.AppendResponse, error) {
+	key := req.GetKey()
+	value := req.GetValue()
+	meta := kvstore.MetaData{
+		Type:     kvstore.DataType(req.Meta.Type),
+		Location: req.Meta.Location,
+	}
+	err := s.store.Append(key, value, meta)
+	if err != nil {
+		return nil, fmt.Errorf("追加失败: %v", err)
+	}
+	// 返回成功响应
+	return &pb.AppendResponse{
+		Success: true,
+	}, nil
+}
 
 // 启动gRPC服务器
 func StartGRPCServer(store *kvstore.KVStore, address string) error {

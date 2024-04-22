@@ -148,31 +148,40 @@ func (kv *KVStore) Append(key string, value []byte, meta MetaData) error {
 
 	// 检查键是否存在
 	item, exists := kv.store[key]
-	if !exists {
-		// 如果键不存在，创建新的键
-		kv.store[key] = Item{Key: key, Value: value, Meta: meta}
-		return nil
+	if exists {
+		// 检查是否为文件或块设备，因为它们的追加行为可能不同
+		switch meta.Type {
+		case KVObj:
+			// 直接追加到现有值
+			item.Value = append(item.Value, value...)
+			kv.store[key] = item
+		case File:
+			err := kv.fsAdapter.AppendFile(meta.Location, value)
+			if err != nil {
+				return fmt.Errorf("error appending to file: %v", err)
+			}
+		case BlockDevice:
+			// 对于块设备，你可能需要处理不同的逻辑或者不支持追加
+			return fmt.Errorf("append operation not supported for block devices")
+		default:
+			return fmt.Errorf("unsupported data type: %v", meta.Type)
+		}
+		// 如果键不存在，则创建一个新的键值对
+	} else {
+		switch meta.Type {
+		case KVObj:
+			kv.store[key] = Item{Key: key, Value: value, Meta: meta}
+		case File:
+			// kv.store[key] = Item{Key: key, Value: nil, Meta: meta}
+			//创建一个新文件并写入数据
+			// err := kv.fsAdapter.WriteFile(meta.Location, value)
+		case BlockDevice:
+			// 对于块设备，你可能需要处理不同的逻辑或者不支持追加
+			return fmt.Errorf("append operation not supported for block devices")
+		default:
+			return fmt.Errorf("unsupported data type: %v", meta.Type)
+		}
 	}
-
-	// 检查是否为文件或块设备，因为它们的追加行为可能不同
-	switch meta.Type {
-	case KVObj:
-		// 直接追加到现有值
-		item.Value = append(item.Value, value...)
-		kv.store[key] = item
-	case File:
-		// // 对于文件，调用文件系统适配器来追加数据
-		// err := kv.fsAdapter.AppendFile(meta.Location, value)
-		// if err != nil {
-		// 	return fmt.Errorf("error appending to file: %v", err)
-		// }
-	case BlockDevice:
-		// 对于块设备，你可能需要处理不同的逻辑或者不支持追加
-		return fmt.Errorf("append operation not supported for block devices")
-	default:
-		return fmt.Errorf("unsupported data type: %v", meta.Type)
-	}
-
 	return nil
 }
 
