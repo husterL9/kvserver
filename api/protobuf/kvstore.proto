@@ -15,6 +15,10 @@ service KVStoreService {
     rpc Append(AppendRequest) returns (AppendResponse) {}
     // 文件ls
     rpc FileLs(FileLsRequest) returns (FileLsResponse) {} 
+    // cd 
+    rpc CdDir(CdDirRequest) returns (CdDirResponse) {}
+    // mkdir
+    rpc MakeDir(MakeDirRequest) returns (MakeDirResponse) {}
 }
 
 // Set请求包含键、值和元数据
@@ -77,8 +81,22 @@ enum DataType {
 message FileLsRequest {
     string path = 1; // 要列出文件的目录路径
 }
-
 message FileLsResponse {
     repeated string files = 1; // 目录中的文件列表
     bool success = 2;
+}
+
+message CdDirRequest{
+    string path = 1; // 要切换的目录路径
+}
+message CdDirResponse{
+    bool success = 1;
+}
+
+message MakeDirRequest{
+    string path = 1; // 要创建的目录路径
+}
+message MakeDirResponse{
+    bool success = 1;
+
 }
