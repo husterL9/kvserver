@@ -55,10 +55,10 @@ type KVStore struct {
 func NewKVStore() *KVStore {
 	rootDir, _ := filepath.Abs("./internal/kvstore/fakeRoot")
 	store := make(map[string]Item)
-	fsAdapter := NewFileSystemAdapter(store)
+	fsAdapter := NewFileSystemAdapter(store, rootDir)
 	// 异步加载文件
 	go func() {
-		fsAdapter.LoadFile(rootDir)
+		fsAdapter.LoadFile()
 	}()
 	blockDeviceAdapter := NewBlockDeviceAdapter()
 	kv := &KVStore{

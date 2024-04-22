@@ -9,6 +9,7 @@ import (
 )
 
 type FileSystemAdapter struct {
+	rootDir     string
 	MappedFiles map[string]*MemoryMap
 	store       map[string]Item
 }
@@ -18,10 +19,11 @@ type MemoryMap struct {
 	Size int64
 }
 
-func NewFileSystemAdapter(store map[string]Item) *FileSystemAdapter {
+func NewFileSystemAdapter(store map[string]Item, rootDir string) *FileSystemAdapter {
 	return &FileSystemAdapter{
 		MappedFiles: make(map[string]*MemoryMap),
 		store:       store,
+		rootDir:     rootDir,
 	}
 }
 
@@ -60,8 +62,8 @@ func (fsa *FileSystemAdapter) Unmap(path string, mmap *MemoryMap) {
 }
 
 // 映射文件到内存
-func (fsa *FileSystemAdapter) LoadFile(rootDir string) (map[string]*MemoryMap, error) {
-	mappedFiles, err := VisitFiles(rootDir, fsa.MappedFiles, fsa.mapFile)
+func (fsa *FileSystemAdapter) LoadFile() (map[string]*MemoryMap, error) {
+	mappedFiles, err := VisitFiles(fsa.rootDir, fsa.MappedFiles, fsa.mapFile)
 	fmt.Println("mappedFiles", mappedFiles)
 	if err != nil {
 		return mappedFiles, err

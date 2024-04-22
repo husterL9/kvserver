@@ -13,6 +13,8 @@ service KVStoreService {
     rpc Delete(DeleteRequest) returns (DeleteResponse) {}
     // 追加数据到键值对
     rpc Append(AppendRequest) returns (AppendResponse) {}
+    // 文件ls
+    rpc FileLs(FileLsRequest) returns (FileLsResponse) {} 
 }
 
 // Set请求包含键、值和元数据
@@ -70,4 +72,13 @@ enum DataType {
     KV_OBJ = 0;
     FILE = 1;
     BLOCK_DEVICE = 2;
+}
+
+message FileLsRequest {
+    string path = 1; // 要列出文件的目录路径
+}
+
+message FileLsResponse {
+    repeated string files = 1; // 目录中的文件列表
+    bool success = 2;
 }

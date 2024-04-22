@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.12.4
-// source: internal/api/protobuf/kvstore.proto
+// source: api/protobuf/kvstore.proto
 
 package protobuf
 
@@ -23,6 +23,7 @@ const (
 	KVStoreService_Get_FullMethodName    = "/kvstore.KVStoreService/Get"
 	KVStoreService_Delete_FullMethodName = "/kvstore.KVStoreService/Delete"
 	KVStoreService_Append_FullMethodName = "/kvstore.KVStoreService/Append"
+	KVStoreService_FileLs_FullMethodName = "/kvstore.KVStoreService/FileLs"
 )
 
 // KVStoreServiceClient is the client API for KVStoreService service.
@@ -37,6 +38,8 @@ type KVStoreServiceClient interface {
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	// 追加数据到键值对
 	Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error)
+	// 文件ls
+	FileLs(ctx context.Context, in *FileLsRequest, opts ...grpc.CallOption) (*FileLsResponse, error)
 }
 
 type kVStoreServiceClient struct {
@@ -83,6 +86,15 @@ func (c *kVStoreServiceClient) Append(ctx context.Context, in *AppendRequest, op
 	return out, nil
 }
 
+func (c *kVStoreServiceClient) FileLs(ctx context.Context, in *FileLsRequest, opts ...grpc.CallOption) (*FileLsResponse, error) {
+	out := new(FileLsResponse)
+	err := c.cc.Invoke(ctx, KVStoreService_FileLs_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KVStoreServiceServer is the server API for KVStoreService service.
 // All implementations must embed UnimplementedKVStoreServiceServer
 // for forward compatibility
@@ -95,6 +107,8 @@ type KVStoreServiceServer interface {
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	// 追加数据到键值对
 	Append(context.Context, *AppendRequest) (*AppendResponse, error)
+	// 文件ls
+	FileLs(context.Context, *FileLsRequest) (*FileLsResponse, error)
 	mustEmbedUnimplementedKVStoreServiceServer()
 }
 
@@ -113,6 +127,9 @@ func (UnimplementedKVStoreServiceServer) Delete(context.Context, *DeleteRequest)
 }
 func (UnimplementedKVStoreServiceServer) Append(context.Context, *AppendRequest) (*AppendResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Append not implemented")
+}
+func (UnimplementedKVStoreServiceServer) FileLs(context.Context, *FileLsRequest) (*FileLsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FileLs not implemented")
 }
 func (UnimplementedKVStoreServiceServer) mustEmbedUnimplementedKVStoreServiceServer() {}
 
@@ -199,6 +216,24 @@ func _KVStoreService_Append_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KVStoreService_FileLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FileLsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVStoreServiceServer).FileLs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVStoreService_FileLs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVStoreServiceServer).FileLs(ctx, req.(*FileLsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KVStoreService_ServiceDesc is the grpc.ServiceDesc for KVStoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -222,7 +257,11 @@ var KVStoreService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Append",
 			Handler:    _KVStoreService_Append_Handler,
 		},
+		{
+			MethodName: "FileLs",
+			Handler:    _KVStoreService_FileLs_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "internal/api/protobuf/kvstore.proto",
+	Metadata: "api/protobuf/kvstore.proto",
 }
