@@ -1,6 +1,7 @@
 package kvstore
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -31,7 +32,24 @@ func (kv *KVStore) fileMakeDir(currentDir string, dirName string) error {
 	return nil
 }
 
-// 创建当前目录下一个新文件
-// func CreateFile(currentDir string) error {
-
-// }
+// 创建一个文件
+func (kv *KVStore) CreateFile(path string) error {
+	fmt.Println("CreateFile", path)
+	// 检查文件是否已存在
+	if _, err := os.Stat(path); err == nil {
+		// 文件已存在，返回特定的响应或错误
+		return fmt.Errorf("文件 '%s' 已存在", path)
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("创建文件失败: %v", err)
+	}
+	defer file.Close()
+	//映射到内存
+	mmap, err := kv.fsAdapter.mapFile(path, 0)
+	if err != nil {
+		return fmt.Errorf("映射文件失败: %v", err)
+	}
+	kv.fsAdapter.MappedFiles[path] = mmap
+	return nil
+}

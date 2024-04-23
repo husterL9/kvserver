@@ -58,24 +58,13 @@ func (c *KVStoreClient) Get(key string) (string, error) {
 		OpId:     c.opId,
 	}
 	c.opId++
-	var value string
-	var err error
 	//处理重试请求
-	for {
-		resp, rpcErr := c.client.Get(ctx, &pb.GetRequest{Key: args.Key, ClientId: args.ClientId, OpId: args.OpId})
-		err = rpcErr
-		fmt.Println("resp", resp, "rpcErr", rpcErr)
-		if rpcErr != nil {
-			value = ""
-		}
-		if resp.Success {
-			value = string(resp.Value)
-			err = nil
-			break
-		}
-		time.Sleep(1 * time.Second)
+	resp, err := c.client.Get(ctx, &pb.GetRequest{Key: args.Key, ClientId: args.ClientId, OpId: args.OpId})
+	fmt.Println("resp", resp, "rpcErr", err)
+	if err != nil {
+		return "", err
 	}
-	return value, err
+	return string(resp.Value), err
 }
 
 // append

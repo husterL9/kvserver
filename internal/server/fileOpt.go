@@ -65,10 +65,9 @@ func (s *server) MakeDir(ctx context.Context, req *pb.MakeDirRequest) (*pb.MakeD
 // CreateFile
 func (s *server) CreateFile(ctx context.Context, req *pb.CreateFileRequest) (*pb.CreateFileResponse, error) {
 	path := req.GetPath()
-	// 检查文件是否已存在
-	if _, err := os.Stat(path); err == nil {
-		// 文件已存在，返回特定的响应或错误
-		return nil, fmt.Errorf("文件 '%s' 已存在", path)
+	err := s.store.CreateFile(path)
+	if err != nil {
+		return nil, err // Return the error to the client
 	}
 	return &pb.CreateFileResponse{
 		Success: true,

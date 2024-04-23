@@ -30,6 +30,7 @@ func NewFileSystemAdapter(store map[string]Item, rootDir string) *FileSystemAdap
 // 映射单个文件到内存
 func (fsa *FileSystemAdapter) mapFile(path string, size int64) (*MemoryMap, error) {
 	if size == 0 {
+		fsa.store[path] = Item{Key: path, Value: nil, Meta: MetaData{Type: File, Location: path}}
 		return &MemoryMap{Data: nil, Size: 0}, nil
 	}
 
@@ -148,21 +149,5 @@ func (fsa *FileSystemAdapter) DeleteFile(path string) error {
 	mmap.Data = nil
 	// 从映射中删除条目
 	delete(fsa.MappedFiles, path)
-	return nil
-}
-
-// 创建一个文件
-func (fsa *FileSystemAdapter) CreateFile(path string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("创建文件失败: %v", err)
-	}
-	defer file.Close()
-	//映射到内存
-	mmap, err := fsa.mapFile(path, 0)
-	if err != nil {
-		return fmt.Errorf("映射文件失败: %v", err)
-	}
-	fsa.MappedFiles[path] = mmap
 	return nil
 }
