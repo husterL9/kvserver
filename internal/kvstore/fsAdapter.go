@@ -68,7 +68,7 @@ func (fsa *FileSystemAdapter) LoadFile() (map[string]*MemoryMap, error) {
 	if err != nil {
 		return mappedFiles, err
 	}
-
+	fmt.Println("fsa.store", fsa.store)
 	return mappedFiles, nil
 }
 
@@ -158,6 +158,11 @@ func (fsa *FileSystemAdapter) CreateFile(path string) error {
 		return fmt.Errorf("创建文件失败: %v", err)
 	}
 	defer file.Close()
-
+	//映射到内存
+	mmap, err := fsa.mapFile(path, 0)
+	if err != nil {
+		return fmt.Errorf("映射文件失败: %v", err)
+	}
+	fsa.MappedFiles[path] = mmap
 	return nil
 }

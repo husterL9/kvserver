@@ -19,6 +19,8 @@ service KVStoreService {
     rpc CdDir(CdDirRequest) returns (CdDirResponse) {}
     // mkdir
     rpc MakeDir(MakeDirRequest) returns (MakeDirResponse) {}
+    //create file
+    rpc CreateFile(CreateFileRequest) returns (CreateFileResponse) {}
 }
 
 // Set请求包含键、值和元数据
@@ -99,4 +101,11 @@ message MakeDirRequest{
 message MakeDirResponse{
     bool success = 1;
 
+}
+message CreateFileRequest{
+    string path = 1; // 要创建的文件路径
+}
+
+message CreateFileResponse{
+    bool success = 1;
 }

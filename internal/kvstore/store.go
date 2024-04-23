@@ -148,15 +148,16 @@ func (kv *KVStore) Append(key string, value []byte, meta MetaData) error {
 
 	// 检查键是否存在
 	item, exists := kv.store[key]
+	fmt.Println("item", item)
 	if exists {
 		// 检查是否为文件或块设备，因为它们的追加行为可能不同
-		switch meta.Type {
+		switch item.Meta.Type {
 		case KVObj:
 			// 直接追加到现有值
 			item.Value = append(item.Value, value...)
 			kv.store[key] = item
 		case File:
-			err := kv.fsAdapter.AppendFile(meta.Location, value)
+			err := kv.fsAdapter.AppendFile(key, value)
 			if err != nil {
 				return fmt.Errorf("error appending to file: %v", err)
 			}

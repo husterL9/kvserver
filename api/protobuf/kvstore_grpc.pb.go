@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	KVStoreService_Set_FullMethodName     = "/kvstore.KVStoreService/Set"
-	KVStoreService_Get_FullMethodName     = "/kvstore.KVStoreService/Get"
-	KVStoreService_Delete_FullMethodName  = "/kvstore.KVStoreService/Delete"
-	KVStoreService_Append_FullMethodName  = "/kvstore.KVStoreService/Append"
-	KVStoreService_FileLs_FullMethodName  = "/kvstore.KVStoreService/FileLs"
-	KVStoreService_CdDir_FullMethodName   = "/kvstore.KVStoreService/CdDir"
-	KVStoreService_MakeDir_FullMethodName = "/kvstore.KVStoreService/MakeDir"
+	KVStoreService_Set_FullMethodName        = "/kvstore.KVStoreService/Set"
+	KVStoreService_Get_FullMethodName        = "/kvstore.KVStoreService/Get"
+	KVStoreService_Delete_FullMethodName     = "/kvstore.KVStoreService/Delete"
+	KVStoreService_Append_FullMethodName     = "/kvstore.KVStoreService/Append"
+	KVStoreService_FileLs_FullMethodName     = "/kvstore.KVStoreService/FileLs"
+	KVStoreService_CdDir_FullMethodName      = "/kvstore.KVStoreService/CdDir"
+	KVStoreService_MakeDir_FullMethodName    = "/kvstore.KVStoreService/MakeDir"
+	KVStoreService_CreateFile_FullMethodName = "/kvstore.KVStoreService/CreateFile"
 )
 
 // KVStoreServiceClient is the client API for KVStoreService service.
@@ -46,6 +47,8 @@ type KVStoreServiceClient interface {
 	CdDir(ctx context.Context, in *CdDirRequest, opts ...grpc.CallOption) (*CdDirResponse, error)
 	// mkdir
 	MakeDir(ctx context.Context, in *MakeDirRequest, opts ...grpc.CallOption) (*MakeDirResponse, error)
+	// create file
+	CreateFile(ctx context.Context, in *CreateFileRequest, opts ...grpc.CallOption) (*CreateFileResponse, error)
 }
 
 type kVStoreServiceClient struct {
@@ -119,6 +122,15 @@ func (c *kVStoreServiceClient) MakeDir(ctx context.Context, in *MakeDirRequest, 
 	return out, nil
 }
 
+func (c *kVStoreServiceClient) CreateFile(ctx context.Context, in *CreateFileRequest, opts ...grpc.CallOption) (*CreateFileResponse, error) {
+	out := new(CreateFileResponse)
+	err := c.cc.Invoke(ctx, KVStoreService_CreateFile_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KVStoreServiceServer is the server API for KVStoreService service.
 // All implementations must embed UnimplementedKVStoreServiceServer
 // for forward compatibility
@@ -137,6 +149,8 @@ type KVStoreServiceServer interface {
 	CdDir(context.Context, *CdDirRequest) (*CdDirResponse, error)
 	// mkdir
 	MakeDir(context.Context, *MakeDirRequest) (*MakeDirResponse, error)
+	// create file
+	CreateFile(context.Context, *CreateFileRequest) (*CreateFileResponse, error)
 	mustEmbedUnimplementedKVStoreServiceServer()
 }
 
@@ -164,6 +178,9 @@ func (UnimplementedKVStoreServiceServer) CdDir(context.Context, *CdDirRequest) (
 }
 func (UnimplementedKVStoreServiceServer) MakeDir(context.Context, *MakeDirRequest) (*MakeDirResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MakeDir not implemented")
+}
+func (UnimplementedKVStoreServiceServer) CreateFile(context.Context, *CreateFileRequest) (*CreateFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateFile not implemented")
 }
 func (UnimplementedKVStoreServiceServer) mustEmbedUnimplementedKVStoreServiceServer() {}
 
@@ -304,6 +321,24 @@ func _KVStoreService_MakeDir_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KVStoreService_CreateFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVStoreServiceServer).CreateFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVStoreService_CreateFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVStoreServiceServer).CreateFile(ctx, req.(*CreateFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // KVStoreService_ServiceDesc is the grpc.ServiceDesc for KVStoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -338,6 +373,10 @@ var KVStoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MakeDir",
 			Handler:    _KVStoreService_MakeDir_Handler,
+		},
+		{
+			MethodName: "CreateFile",
+			Handler:    _KVStoreService_CreateFile_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
