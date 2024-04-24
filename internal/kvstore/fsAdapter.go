@@ -29,6 +29,9 @@ func NewFileSystemAdapter(store map[string]Item, rootDir string) *FileSystemAdap
 
 // 映射单个文件到内存
 func (fsa *FileSystemAdapter) mapFile(path string, size int64) (*MemoryMap, error) {
+	if path == "/home/ljw/SE8/kvserver/internal/kvstore/fakeBlock/fakeBlockDevice" {
+		fmt.Println("path", path)
+	}
 	if size == 0 {
 		fsa.store[path] = Item{Key: path, Value: nil, Meta: MetaData{Type: File, Location: path}}
 		return &MemoryMap{Data: nil, Size: 0}, nil
@@ -65,21 +68,25 @@ func (fsa *FileSystemAdapter) Unmap(path string, mmap *MemoryMap) {
 // 映射文件到内存
 func (fsa *FileSystemAdapter) LoadFile() (map[string]*MemoryMap, error) {
 	mappedFiles, err := VisitFiles(fsa.rootDir, fsa.MappedFiles, fsa.mapFile)
-	fmt.Println("mappedFiles", mappedFiles)
 	if err != nil {
 		return mappedFiles, err
 	}
-	fmt.Println("fsa.store", fsa.store)
 	return mappedFiles, nil
 }
 
 func (fsa *FileSystemAdapter) ReadFile(path string) ([]byte, error) {
 	mmap, ok := fsa.MappedFiles[path]
+	fmt.Println("path", path)
+	if path == "/dev/loop6" {
+		fmt.Println("path", path)
+		return mmap.Data[:5], nil
+	}
+
 	if !ok {
 		return nil, fmt.Errorf("file not mapped: %s", path)
 	}
 	if mmap.Data == nil {
-		return nil, fmt.Errorf("no data mapped for file: %s", path)
+		return []byte(""), nil
 	}
 	// 返回一个数据副本以防止外部修改影响内存映射区域
 	// dataCopy := make([]byte, mmap.Size)
@@ -96,11 +103,16 @@ func (fsa *FileSystemAdapter) WriteFile(path string, data []byte) error {
 		return fmt.Errorf("data size exceeds mapped size for file: %s", path)
 	}
 	// 更新内存映射区域
-	copy(mmap.Data, data)
+	copy(mmap.Data[6:10], data)
 	return nil
 }
 
 func (fsa *FileSystemAdapter) AppendFile(path string, data []byte) error {
+	if path == "/dev/loop6" {
+		fmt.Println("path", path)
+		fsa.WriteFile(path, data)
+		return nil
+	}
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -109,6 +121,7 @@ func (fsa *FileSystemAdapter) AppendFile(path string, data []byte) error {
 
 	// 获取当前文件大小
 	fileInfo, err := file.Stat()
+	fmt.Println("fileInfo", fileInfo.Size())
 	if err != nil {
 		return err
 	}
@@ -123,14 +136,14 @@ func (fsa *FileSystemAdapter) AppendFile(path string, data []byte) error {
 	}
 
 	// 重新映射文件
-	mmap, err := unix.Mmap(int(file.Fd()), 0, int(newSize), unix.PROT_READ|unix.PROT_WRITE, unix.MAP_SHARED)
-	if err != nil {
+	mmap, mapErr := fsa.mapFile(path, newSize)
+	if mapErr != nil {
 		return err
 	}
-	defer unix.Munmap(mmap)
+	fsa.MappedFiles[path] = mmap
 
 	// 将数据追加到映射区域
-	copy(mmap[currentSize:], data)
+	copy(mmap.Data[currentSize:], data)
 
 	return nil
 }

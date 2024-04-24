@@ -80,7 +80,11 @@ func StartGRPCServer(store *kvstore.KVStore, address string) error {
 	if err != nil {
 		return err
 	}
-	s := grpc.NewServer()
+	opts := []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(200 * 1024 * 1024), // 100MB
+		grpc.MaxSendMsgSize(200 * 1024 * 1024), // 100MB
+	}
+	s := grpc.NewServer(opts...)
 	pb.RegisterKVStoreServiceServer(s, NewServer(store))
 	log.Printf("server listening at %v", lis.Addr())
 	return s.Serve(lis)

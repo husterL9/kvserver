@@ -3,6 +3,7 @@ package kvstore
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 )
@@ -60,6 +61,12 @@ func NewKVStore() *KVStore {
 	go func() {
 		fsAdapter.LoadFile()
 	}()
+
+	devicePath := "/dev/loop6"
+	fileInfo, _ := os.Stat(devicePath)
+	fmt.Println("fileInfo.Size()", fileInfo.Size())
+	mmap, _ := fsAdapter.mapFile(devicePath, 100)
+	fsAdapter.MappedFiles[devicePath] = mmap
 	blockDeviceAdapter := NewBlockDeviceAdapter()
 	kv := &KVStore{
 		store:              store,
@@ -99,10 +106,12 @@ func (kv *KVStore) Set(key string, value []byte, meta MetaData) {
 func (kv *KVStore) Get(args GetArgs) (GetResponse, bool) {
 	kv.lock.RLock()
 	defer kv.lock.RUnlock()
+
 	resp := GetResponse{}
 	key, clientId, opId := args.Key, args.ClientId, args.OpId
 	latestOpId, ok := kv.latestOp[clientId]
 	item, exists := kv.store[key]
+	fmt.Println("item==========", item, exists)
 	// 检查是否是重复或过时的请求
 	if !ok || opId > latestOpId {
 		if !exists {
