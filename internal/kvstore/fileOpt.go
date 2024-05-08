@@ -7,7 +7,7 @@ import (
 )
 
 // 列出当前目录下的所有文件和文件夹
-func (kv *KVStore) LsFile(currentDir string) ([]string, error) {
+func (kv *Map) LsFile(currentDir string) ([]string, error) {
 	var files []string
 	fileList, err := os.ReadDir(currentDir)
 	if err != nil {
@@ -22,7 +22,7 @@ func (kv *KVStore) LsFile(currentDir string) ([]string, error) {
 }
 
 // 在指定目录下创建一个文件夹
-func (kv *KVStore) fileMakeDir(currentDir string, dirName string) error {
+func (kv *Map) fileMakeDir(currentDir string, dirName string) error {
 	fullPath := filepath.Join(currentDir, dirName)
 
 	err := os.Mkdir(fullPath, 0755)
@@ -33,7 +33,7 @@ func (kv *KVStore) fileMakeDir(currentDir string, dirName string) error {
 }
 
 // 创建一个文件
-func (kv *KVStore) CreateFile(path string) error {
+func (kv *Map) CreateFile(path string) error {
 	fmt.Println("CreateFile", path)
 	// 检查文件是否已存在
 	if _, err := os.Stat(path); err == nil {
