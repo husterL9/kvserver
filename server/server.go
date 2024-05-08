@@ -8,7 +8,7 @@ import (
 
 	pb "github.com/husterL9/kvserver/api/protobuf" // 替换为你的protobuf包路径
 
-	"github.com/husterL9/kvserver/db"
+	db "github.com/husterL9/kvserver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,7 +27,7 @@ func NewServer(store *db.KVStore) *server {
 
 // Set
 func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
-	meta := db.MetaData{
+	meta := db.KVStore.MetaData{
 		Type:     db.DataType(req.Meta.Type),
 		Location: req.Meta.Location,
 		Offset:   req.Meta.Offset,

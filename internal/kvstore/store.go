@@ -1,9 +1,9 @@
 package kvstore
 
 type Store interface {
-	Get(args GetArgs) ([]byte, bool)
-	Set(key string, value []byte, meta MetaData) (err error)
-	Append(key string, value []byte, meta MetaData) (err error)
+	Get(key string) (*Item, bool)
+	Set(key string, value []byte) (err error)
+	Append(key string, value []byte) (err error)
 	Delete(key string)
 	// Prefix(key string) map[string][]byte
 	// Dump() map[string][]byte

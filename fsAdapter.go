@@ -1,17 +1,18 @@
-package kvstore
+package db
 
 import (
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/husterL9/kvserver/internal/kvstore"
 	"golang.org/x/sys/unix"
 )
 
 type FileSystemAdapter struct {
 	rootDir     string
 	MappedFiles map[string]*MemoryMap
-	store       map[string]Item
+	store       kvstore.Store
 }
 
 type MemoryMap struct {
@@ -19,7 +20,7 @@ type MemoryMap struct {
 	Size int64
 }
 
-func NewFileSystemAdapter(store map[string]Item, rootDir string) *FileSystemAdapter {
+func NewFileSystemAdapter(store kvstore.Store, rootDir string) *FileSystemAdapter {
 	return &FileSystemAdapter{
 		MappedFiles: make(map[string]*MemoryMap),
 		store:       store,
@@ -33,7 +34,7 @@ func (fsa *FileSystemAdapter) mapFile(path string, size int64) (*MemoryMap, erro
 		fmt.Println("path", path)
 	}
 	if size == 0 {
-		fsa.store[path] = Item{Key: path, Value: nil, Meta: MetaData{Type: File, Location: path}}
+		fsa.store[path] = &Item{Key: path, Value: nil, Meta: MetaData{Type: File, Location: path}}
 		return &MemoryMap{Data: nil, Size: 0}, nil
 	}
 
@@ -47,7 +48,7 @@ func (fsa *FileSystemAdapter) mapFile(path string, size int64) (*MemoryMap, erro
 	if err != nil {
 		return nil, err
 	}
-	fsa.store[path] = Item{Key: path, Value: nil, Meta: MetaData{Type: File, Location: path}}
+	fsa.store[path] = &Item{Key: path, Value: nil, Meta: MetaData{Type: File, Location: path}}
 	return &MemoryMap{Data: data, Size: size}, nil
 }
 
