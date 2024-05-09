@@ -5,6 +5,13 @@ type GetArgs struct {
 	ClientId int64 // 客户端ID
 	OpId     int64 // 操作ID，确保幂等性
 }
+type SetArgs struct {
+	Key      string
+	Value    []byte
+	ClientId int64
+	OpId     int64
+	meta     MetaData
+}
 type GetResponse struct {
 	Value   []byte
 	Success bool

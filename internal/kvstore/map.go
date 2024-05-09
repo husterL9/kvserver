@@ -1,17 +1,34 @@
 package kvstore
 
-import (
-	"fmt"
-)
-
 type Map struct {
 	kv map[string]*Item
+}
+
+// 存储在KV存储中的数据类型
+type DataType int
+
+const (
+	// KVObj 表示键值对对象
+	KVObj DataType = iota
+	// File 表示文件对象
+	File
+	// BlockDevice 表示块设备对象
+	BlockDevice
+)
+
+// MetaData 代表存储在KV存储中的每个对象的元数据
+type MetaData struct {
+	Type     DataType // 对象类型: KVObj, File, 或 BlockDevice
+	Location string   // 文件或块设备的位置信息（对于KV对象，此字段可以为空）
+	Offset   int64    // 读/写操作的起始偏移量
+	Size     int64    // 读/写操作的数据长度
 }
 
 // Item 表示存储在内存中的键值对项
 type Item struct {
 	Key       string
 	Value     []byte
+	TxID      int64
 	Timestamp int64
 	Committed bool
 	Meta      MetaData
@@ -27,9 +44,8 @@ func NewMap() Store {
 	}
 }
 
-func (m *Map) Set(key string, value []byte) error {
-	// m.kv[key] = val
-
+func (m *Map) Set(key string, val *Item) {
+	m.kv[key] = val
 }
 
 func (m *Map) Get(key string) (*Item, bool) {
@@ -40,47 +56,13 @@ func (m *Map) Get(key string) (*Item, bool) {
 	return val, true
 }
 
-func (m *Map) Append(key string, value []byte) error {
-
-	// 检查键是否存在
-	item, exists := m.kv[key]
-	fmt.Println("item", item)
-	if exists {
-		// 检查是否为文件或块设备，因为它们的追加行为可能不同
-		switch item.Meta.Type {
-		case KVObj:
-			// 直接追加到现有值
-			item.Value = append(item.Value, value...)
-			m.kv[key] = item
-		case File:
-			err := m.fsAdapter.AppendFile(key, value)
-			if err != nil {
-				return fmt.Errorf("error appending to file: %v", err)
-			}
-		case BlockDevice:
-			// 对于块设备，你可能需要处理不同的逻辑或者不支持追加
-			return fmt.Errorf("append operation not supported for block devices")
-		default:
-			return fmt.Errorf("unsupported data type: %v", meta.Type)
-		}
-		// 如果键不存在，则创建一个新的键值对
-	} else {
-		switch meta.Type {
-		case KVObj:
-			m.Set(key, value, meta)
-		case File:
-			// kv.store[key] = Item{Key: key, Value: nil, Meta: meta}
-			//创建一个新文件并写入数据
-			// err := kv.fsAdapter.WriteFile(meta.Location, value)
-		case BlockDevice:
-			// 对于块设备，你可能需要处理不同的逻辑或者不支持追加
-			return fmt.Errorf("append operation not supported for block devices")
-		default:
-			return fmt.Errorf("unsupported data type: %v", meta.Type)
-		}
-	}
-	return nil
-}
+// func (m *Map) Append(key string, value []byte) (err error) {
+// 	item, ok := m.Get(key)
+// 	if ok {
+// 		item.Value = append(item.Value, value...)
+// 		m.kv[key] = item
+// 	}
+// }
 
 func (m *Map) Delete(key string) {
 	delete(m.kv, key)

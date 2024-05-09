@@ -18,26 +18,6 @@ type OpRecord struct {
 
 }
 
-// 存储在KV存储中的数据类型
-type DataType int
-
-const (
-	// KVObj 表示键值对对象
-	KVObj DataType = iota
-	// File 表示文件对象
-	File
-	// BlockDevice 表示块设备对象
-	BlockDevice
-)
-
-// MetaData 代表存储在KV存储中的每个对象的元数据
-type MetaData struct {
-	Type     DataType // 对象类型: KVObj, File, 或 BlockDevice
-	Location string   // 文件或块设备的位置信息（对于KV对象，此字段可以为空）
-	Offset   int64    // 读/写操作的起始偏移量
-	Size     int64    // 读/写操作的数据长度
-}
-
 // KVStore 表示内存键值存储引擎的主结构
 type KVStore struct {
 	lock sync.RWMutex
@@ -73,7 +53,7 @@ func NewKVStore(conf *Config) *KVStore {
 	rootDir, _ := filepath.Abs("./internal/kvstore/fakeRoot")
 	conf = conf.Default()
 	store := conf.Store
-	fsAdapter := NewFileSystemAdapter(kv, rootDir)
+	fsAdapter := NewFileSystemAdapter(store, rootDir)
 	// 异步加载文件
 	go func() {
 		fsAdapter.LoadFile()
@@ -93,38 +73,41 @@ func NewKVStore(conf *Config) *KVStore {
 	return db
 }
 
-func (db *KVStore) Set(key string, value []byte, meta MetaData) {
+func (db *KVStore) Set(key string, value []byte, meta kvstore.MetaData) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
+	err := db.set(key, value, meta)
+	return err
+}
+
+func (db *KVStore) set(key string, value []byte, meta kvstore.MetaData) error {
 	err := error(nil)
 	switch meta.Type {
-	case KVObj:
-		db.kv[key] = &Item{Key: key, Value: value, Meta: meta}
-	case File:
+	case kvstore.KVObj:
+		db.store.Set(key, &kvstore.Item{Key: key, Value: value, Meta: meta})
+	case kvstore.File:
 		// err := kv.fsAdapter.WriteFile(meta.Location, value)
 		err = error(nil)
 		if err != nil {
 			log.Printf("Error writing file: %v", err)
 		} else {
-			db.kv[key] = &Item{Key: key, Value: []byte("file data at offset 0"), Meta: meta}
+			db.store.Set(key, &kvstore.Item{Key: key, Value: []byte("file data at offset 0"), Meta: meta})
 		}
 		return err
-	case BlockDevice:
+	case kvstore.BlockDevice:
 		fmt.Println("meta.Offset", meta.Offset)
-		err = m.blockDeviceAdapter.WriteBlock(meta.Offset, value)
+		err = db.blockDeviceAdapter.WriteBlock(meta.Offset, value)
 		if err != nil {
 			log.Printf("Error writing block device: %v", err)
 		} else {
-			m.kv[key] = &Item{Key: key, Value: []byte("Block device data at offset 0"), Meta: meta}
+			db.store.Set(key, &kvstore.Item{Key: key, Value: []byte("Block device data at offset 0"), Meta: meta})
 		}
 	default:
 		log.Printf("Unsupported data type: %v", meta.Type)
 	}
 	return err
-	db.store.Set(key, value, meta)
 
 }
-
 func (db *KVStore) Get(args kvstore.GetArgs) (kvstore.GetResponse, bool) {
 	db.lock.RLock()
 	defer db.lock.RUnlock()
@@ -145,19 +128,27 @@ func (db *KVStore) Get(args kvstore.GetArgs) (kvstore.GetResponse, bool) {
 				Value: item.Value,
 			}, true
 		case kvstore.File:
-			data, err := db.store.fsAdapter.ReadFile(key)
+			data, err := db.fsAdapter.ReadFile(key)
 			if err != nil {
 				log.Printf("Error reading file: %v", err)
-				return nil, false
+				return kvstore.GetResponse{
+					Value: nil,
+				}, false
 			}
-			return data, true
+			return kvstore.GetResponse{
+				Value: data,
+			}, true
 		case kvstore.BlockDevice:
 			data, err := db.blockDeviceAdapter.ReadBlock(0, 3)
 			if err != nil {
 				log.Printf("Error reading block device: %v", err)
-				return nil, false
+				return kvstore.GetResponse{
+					Value: nil,
+				}, false
 			}
-			return data, true
+			return kvstore.GetResponse{
+				Value: data,
+			}, true
 		}
 	}
 	//如果 args.OpId = latestOpId,则这个请求是重复的
@@ -173,14 +164,54 @@ func (db *KVStore) Get(args kvstore.GetArgs) (kvstore.GetResponse, bool) {
 	return kvstore.GetResponse{
 		Value: nil,
 	}, false
-
 }
 
+func (db *KVStore) get(args kvstore.GetArgs) (*kvstore.Item, bool) {
+	item, ok := db.store.Get(args.Key)
+	return item, ok
+}
 func (db *KVStore) Append(key string, value []byte, meta kvstore.MetaData) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
-	err := db.store.Append(key, value, meta)
-	return err
+	// 检查键是否存在
+	item, exists := db.store.Get(key)
+	fmt.Println("item", item)
+	if exists {
+		// 检查是否为文件或块设备，因为它们的追加行为可能不同
+		switch item.Meta.Type {
+		case kvstore.KVObj:
+			// 直接追加到现有值
+			item.Value = append(item.Value, value...)
+			db.store.Set(key, item)
+		case kvstore.File:
+			err := db.fsAdapter.AppendFile(key, value)
+			if err != nil {
+				return fmt.Errorf("error appending to file: %v", err)
+			}
+		case kvstore.BlockDevice:
+			// 对于块设备，你可能需要处理不同的逻辑或者不支持追加
+			return fmt.Errorf("append operation not supported for block devices")
+		default:
+			return fmt.Errorf("unsupported data type: %v", meta.Type)
+		}
+		// 如果键不存在，则创建一个新的键值对
+	} else {
+		item := &kvstore.Item{Key: key, Value: nil, Meta: meta}
+		switch meta.Type {
+		case kvstore.KVObj:
+			db.store.Set(key, item)
+		case kvstore.File:
+			// kv.store[key] = Item{Key: key, Value: nil, Meta: meta}
+			//创建一个新文件并写入数据
+			// err := kv.fsAdapter.WriteFile(meta.Location, value)
+		case kvstore.BlockDevice:
+			// 对于块设备，你可能需要处理不同的逻辑或者不支持追加
+			return fmt.Errorf("append operation not supported for block devices")
+		default:
+			return fmt.Errorf("unsupported data type: %v", meta.Type)
+		}
+	}
+	return nil
 }
 
 // Delete 根据键删除一个键值对

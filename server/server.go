@@ -7,6 +7,7 @@ import (
 	"net"
 
 	pb "github.com/husterL9/kvserver/api/protobuf" // 替换为你的protobuf包路径
+	"github.com/husterL9/kvserver/internal/kvstore"
 
 	db "github.com/husterL9/kvserver"
 	"google.golang.org/grpc"
@@ -27,8 +28,8 @@ func NewServer(store *db.KVStore) *server {
 
 // Set
 func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
-	meta := db.KVStore.MetaData{
-		Type:     db.DataType(req.Meta.Type),
+	meta := kvstore.MetaData{
+		Type:     kvstore.DataType(req.Meta.Type),
 		Location: req.Meta.Location,
 		Offset:   req.Meta.Offset,
 		Size:     req.Meta.Size,
@@ -39,7 +40,7 @@ func (s *server) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, 
 
 // Get
 func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, error) {
-	args := db.GetArgs{
+	args := kvstore.GetArgs{
 		Key:      req.GetKey(),
 		ClientId: req.GetClientId(),
 		OpId:     req.GetOpId(),
@@ -52,15 +53,15 @@ func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 		return &pb.GetResponse{Value: nil, Success: exists}, status.Errorf(codes.NotFound, "key not found: %s", req.GetKey())
 	}
 	// 如果键存在，返回找到的值
-	return &pb.GetResponse{Value: val, Success: exists}, nil
+	return &pb.GetResponse{Value: val.Value, Success: exists}, nil
 }
 
 // append
 func (s *server) Append(ctx context.Context, req *pb.AppendRequest) (*pb.AppendResponse, error) {
 	key := req.GetKey()
 	value := req.GetValue()
-	meta := db.MetaData{
-		Type:     db.DataType(req.Meta.Type),
+	meta := kvstore.MetaData{
+		Type:     kvstore.DataType(req.Meta.Type),
 		Location: req.Meta.Location,
 	}
 	err := s.store.Append(key, value, meta)

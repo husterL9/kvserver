@@ -34,7 +34,7 @@ func (fsa *FileSystemAdapter) mapFile(path string, size int64) (*MemoryMap, erro
 		fmt.Println("path", path)
 	}
 	if size == 0 {
-		fsa.store[path] = &Item{Key: path, Value: nil, Meta: MetaData{Type: File, Location: path}}
+		fsa.store.Set(path, &kvstore.Item{Key: path, Value: nil, Meta: kvstore.MetaData{Type: kvstore.File, Location: path}})
 		return &MemoryMap{Data: nil, Size: 0}, nil
 	}
 
@@ -48,7 +48,7 @@ func (fsa *FileSystemAdapter) mapFile(path string, size int64) (*MemoryMap, erro
 	if err != nil {
 		return nil, err
 	}
-	fsa.store[path] = &Item{Key: path, Value: nil, Meta: MetaData{Type: File, Location: path}}
+	fsa.store.Set(path, &kvstore.Item{Key: path, Value: nil, Meta: kvstore.MetaData{Type: kvstore.File, Location: path}})
 	return &MemoryMap{Data: data, Size: size}, nil
 }
 
@@ -63,7 +63,7 @@ func (fsa *FileSystemAdapter) Unmap(path string, mmap *MemoryMap) {
 	mmap.Data = nil
 	// 删除映射中的条目
 	delete(fsa.MappedFiles, path)
-	delete(fsa.store, path)
+	fsa.store.Delete(path)
 }
 
 // 映射文件到内存

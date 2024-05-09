@@ -28,6 +28,8 @@ message SetRequest {
     string key = 1;
     bytes value = 2;
     MetaData meta = 3;
+    int64 clientId=4;
+    int64 opId=5;
 }
 
 message SetResponse {
@@ -59,6 +61,8 @@ message AppendRequest {
     string key = 1;
     bytes value = 2; // 追加的数据
     MetaData meta = 3;
+    int64 clientId=4;
+    int64 opId=5;
 }
 
 // Append响应

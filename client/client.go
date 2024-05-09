@@ -39,9 +39,11 @@ func (c *KVStoreClient) Set(key, value string, meta *pb.MetaData) (bool, error) 
 	defer cancel()
 
 	resp, err := c.client.Set(ctx, &pb.SetRequest{
-		Key:   key,
-		Value: []byte(value),
-		Meta:  meta,
+		Key:      key,
+		Value:    []byte(value),
+		ClientId: c.clientId,
+		OpId:     c.opId,
+		Meta:     meta,
 	})
 	if err != nil {
 		return false, err
