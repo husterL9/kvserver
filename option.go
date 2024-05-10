@@ -28,9 +28,10 @@ func (op OpType) String() string {
 type Op struct {
 	op OpType
 
-	key string
-	end string
-	val []byte
+	key  string
+	end  string
+	txID int64
+	val  []byte
 
 	ttl int64
 

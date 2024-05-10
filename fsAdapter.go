@@ -33,8 +33,11 @@ func (fsa *FileSystemAdapter) mapFile(path string, size int64) (*MemoryMap, erro
 	if path == "/home/ljw/SE8/kvserver/internal/kvstore/fakeBlock/fakeBlockDevice" {
 		fmt.Println("path", path)
 	}
+	version := &kvstore.Version{
+		Meta: kvstore.MetaData{Type: kvstore.File, Location: path},
+	}
 	if size == 0 {
-		fsa.store.Set(path, &kvstore.Item{Key: path, Value: nil, Meta: kvstore.MetaData{Type: kvstore.File, Location: path}})
+		fsa.store.Set(path, &kvstore.Item{Key: path, Version: version})
 		return &MemoryMap{Data: nil, Size: 0}, nil
 	}
 
@@ -48,7 +51,7 @@ func (fsa *FileSystemAdapter) mapFile(path string, size int64) (*MemoryMap, erro
 	if err != nil {
 		return nil, err
 	}
-	fsa.store.Set(path, &kvstore.Item{Key: path, Value: nil, Meta: kvstore.MetaData{Type: kvstore.File, Location: path}})
+	fsa.store.Set(path, &kvstore.Item{Key: path, Version: version})
 	return &MemoryMap{Data: data, Size: size}, nil
 }
 

@@ -10,7 +10,7 @@ type SetArgs struct {
 	Value    []byte
 	ClientId int64
 	OpId     int64
-	meta     MetaData
+	Meta     MetaData
 }
 type GetResponse struct {
 	Value   []byte

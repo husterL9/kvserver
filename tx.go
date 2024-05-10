@@ -1,6 +1,9 @@
 package db
 
-import "github.com/husterL9/kvserver/internal/kvstore"
+import (
+	"github.com/husterL9/kvserver/internal/kvstore"
+	"github.com/husterL9/kvserver/internal/wal"
+)
 
 type ReadView struct {
 	//Read View 创建时其他未提交的活跃事务 ID 列表。
@@ -50,74 +53,93 @@ func (tx *Tx) genRV() error {
 }
 
 func (tx *Tx) commit() error {
+	if len(tx.commits) == 0 {
+		return nil
+	}
 
+	batch := new(wal.Batch)
+	for _, commit := range tx.commits {
+		data, err := commit.Encode()
+		if err != nil {
+			return err
+		}
+		batch.Write(data)
+	}
+
+	if n, err := tx.db.wal.WriteBatch(batch, wal.WithSync, wal.WithAtomic); err != nil {
+		if n > 0 {
+			tx.db.wal.Truncate(n)
+		}
+		tx.commits = nil
+		return err
+	}
+
+	// notify all commit
+	// for _, commit := range tx.commits {
+	// 	tx.db.notify(&Op{
+	// 		key: string(commit.Key),
+	// 		val: commit.Val,
+	// 		op:  OpType(commit.Op),
+	// 	})
+	// }
+
+	//将txID从activeTxIDs中删除
+	tx.db.tm.activeTxIDs = Remove(tx.db.tm.activeTxIDs, tx.txID)
+	tx.commits = nil
+	tx.undos = nil
+
+	return nil
 }
 
-func (tx *Tx) rollBack() {
+func (tx *Tx) rollBack() error {
+	tx.db.lock.Lock()
+	defer tx.db.lock.Unlock()
+	tx.commits = nil
+	for _, undo := range tx.undos {
+		if err := tx.db.loadRecord(undo); err != nil {
+			return err
+		}
+	}
 
+	tx.undos = nil
+	tx.db = nil
+	return nil
 }
+
 func (tx *Tx) Get(args kvstore.GetArgs) (kvstore.GetResponse, bool) {
 	tx.genRV()
 	currentTxId := tx.txID
 	item, ok := tx.db.get(args)
-	itemTxId := item.TxID
+	itemTxId := item.Version.TxID
+	verison := item.Version
 	// 遍历版本链找到合适的版本,RR
-	for item != nil {
+	for verison != nil {
 		if itemTxId < tx.readView.upLimitID {
-			return kvstore.GetResponse{Value: item.Value}, true
+			return kvstore.GetResponse{Value: item.Version.Value}, true
 		}
 		if itemTxId == currentTxId {
-			return kvstore.GetResponse{Value: item.Value}, true
+			return kvstore.GetResponse{Value: item.Version.Value}, true
 		}
 		//如果介于up和low之间，说明在创建ReadView时生成该版本的事务仍处于活跃状态，因此该版本不能被访问
 		if itemTxId < tx.readView.lowLimitID && !Contains(tx.readView.activeTxIDs, itemTxId) {
-			return kvstore.GetResponse{Value: item.Value}, true
+			return kvstore.GetResponse{Value: item.Version.Value}, true
 		}
-		item = item.Next
+		verison = verison.Next
 	}
 	//没有找到已提交的版本
 	return kvstore.GetResponse{Value: nil}, ok
 }
-func (tx *Tx) Set(args kvstore.SetArgs) {
+func (tx *Tx) Set(args kvstore.SetArgs, opts ...Option) {
 	key := args.Key
-	clientId := args.ClientId
-	opId := args.OpId
-	oldItem, ok := tx.db.get(kvstore.GetArgs{
-		Key:      key,
-		ClientId: clientId,
-		OpId:     opId,
-	})
-	if ok {
-		//插入到链表头部
-		newItem := &kvstore.Item{
-			Value: args.Value,
-			TxID:  tx.txID,
-			Next:  oldItem,
-		}
-		tx.db.store.Set(key, newItem)
-	} else {
-
+	val := args.Value
+	meta := args.Meta
+	op := setOption(key, val, opts...)
+	undo := &Op{key: key}
+	err := tx.db.set(key, val, meta)
+	if err == nil {
+		undo.op = ModifyOp
+		undo.txID = tx.txID
 	}
-
-}
-
-func (db *KVStore) Tx(f func(tx *Tx) error) error {
-	tx, err := db.tm.BeginTx()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err != nil {
-			tx.rollBack()
-		}
-	}()
-
-	if err = f(tx); err != nil {
-		return err
-	}
-
-	err = tx.commit()
-
-	return err
+	tx.undos = append(tx.undos, NewRecord(undo))
+	tx.commits = append(tx.commits, NewRecord(op))
 }

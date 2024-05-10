@@ -23,16 +23,18 @@ type MetaData struct {
 	Offset   int64    // 读/写操作的起始偏移量
 	Size     int64    // 读/写操作的数据长度
 }
-
-// Item 表示存储在内存中的键值对项
-type Item struct {
-	Key       string
+type Version struct {
 	Value     []byte
 	TxID      int64
 	Timestamp int64
-	Committed bool
 	Meta      MetaData
-	Next      *Item
+	Next      *Version
+}
+
+// Item 表示存储在内存中的键值对项
+type Item struct {
+	Key     string
+	Version *Version
 }
 
 func NewMap() Store {
