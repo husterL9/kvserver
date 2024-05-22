@@ -5,14 +5,16 @@ package main
 import (
 	"log"
 
-	"github.com/husterL9/kvserver/internal/kvstore"
-	"github.com/husterL9/kvserver/internal/server"
+	db "github.com/husterL9/kvserver"
+	"github.com/husterL9/kvserver/server"
 )
 
 func main() {
 	// fsRootDir := ""       // 文件系统根目录
 	// blockDevicePath := "" // 块设备路径
-	err := server.StartGRPCServer(kvstore.NewKVStore(), ":50051")
+
+	config := &db.Config{}
+	err := server.StartGRPCServer(db.NewKVStore(config), ":50051")
 	if err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
