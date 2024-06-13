@@ -22,7 +22,6 @@ service KVStoreService {
     //create file
     rpc CreateFile(CreateFileRequest) returns (CreateFileResponse) {}
 }
-
 // Set请求包含键、值和元数据
 message SetRequest {
     string key = 1;

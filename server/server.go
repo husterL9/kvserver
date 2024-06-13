@@ -11,8 +11,6 @@ import (
 
 	db "github.com/husterL9/kvserver"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // server是KVStoreService的实现
@@ -50,7 +48,7 @@ func (s *server) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetResponse, 
 	if !exists {
 		// 如果键不存在，可以返回一个错误或一个空的响应
 		log.Printf("Key not found: %s", req.GetKey())
-		return &pb.GetResponse{Value: nil, Success: exists}, status.Errorf(codes.NotFound, "key not found: %s", req.GetKey())
+		return &pb.GetResponse{Value: nil, Success: exists}, nil
 	}
 	// 如果键存在，返回找到的值
 	return &pb.GetResponse{Value: val.Value, Success: exists}, nil

@@ -31,7 +31,7 @@ func main() {
 
 	// 获取键值对
 	c.Set("2", "3", &protobuf.MetaData{})
-	gotValue, err := c.Get("2")
+	gotValue, err := c.Get("keyg0c0")
 	gotValue2, _ := c.Get("/home/ljw/SE8/kvserver/internal/kvstore/fakeRoot/config/config1.txt")
 	if err != nil {
 		log.Fatalf("could not get value: %v", err)

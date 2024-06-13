@@ -1,0 +1,9 @@
+{
+  "proto": "/home/ljw/SE8/kvserver/api/protobuf/kvstore.proto",
+  "call": "kvstore.KVStoreService/Set",                      
+  "data":{"key":"key-{{.RequestNumber}}","value":"0x","meta":{"type":"KV_OBJ","location":"location-{{.RequestNumber}}","offset":0,"size":10}},
+  "insecure": true,
+  "host": "localhost:50051",                  
+  "concurrency": 10,
+  "total": 10000
+} 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"syscall"
 
 	"github.com/husterL9/kvserver/internal/kvstore"
 	"golang.org/x/sys/unix"
@@ -100,14 +101,37 @@ func (fsa *FileSystemAdapter) ReadFile(path string) ([]byte, error) {
 
 func (fsa *FileSystemAdapter) WriteFile(path string, data []byte) error {
 	mmap, ok := fsa.MappedFiles[path]
+	println("path", path, "ok", ok)
 	if !ok {
-		return fmt.Errorf("file not mapped: %s", path)
+		// 创建一个新的文件并映射到内存
+		file, err := os.Create(path)
+		if err != nil {
+			return fmt.Errorf("failed to create file: %v", err)
+		}
+		defer file.Close()
+
+		// 设置文件大小
+		size := int64(len(data))
+		if err := file.Truncate(size); err != nil {
+			return fmt.Errorf("failed to set file size: %v", err)
+		}
+		file.Write(data)
+		// 映射文件到内存
+		mmapData, err := syscall.Mmap(int(file.Fd()), 0, int(size), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+		if err != nil {
+			return fmt.Errorf("failed to mmap file: %v", err)
+		}
+		mmap = &MemoryMap{
+			Data: mmapData,
+			Size: size,
+		}
+		fsa.MappedFiles[path] = mmap
 	}
 	if int64(len(data)) > mmap.Size {
 		return fmt.Errorf("data size exceeds mapped size for file: %s", path)
 	}
 	// 更新内存映射区域
-	copy(mmap.Data[6:10], data)
+	copy(mmap.Data, data)
 	return nil
 }
 

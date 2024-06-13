@@ -77,6 +77,7 @@ func NewKVStore(conf *Config) *KVStore {
 func (db *KVStore) Set(key string, value []byte, meta kvstore.MetaData) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
+	fmt.Println("Set key:", key, "value:", string(value), "meta:", meta)
 	err := db.set(key, value, meta)
 	return err
 }
@@ -95,12 +96,12 @@ func (db *KVStore) set(key string, value []byte, meta kvstore.MetaData) error {
 		item.Version = version
 		return nil
 	} else {
+		fmt.Println("meta.Type", meta.Type)
 		switch meta.Type {
 		case kvstore.KVObj:
 			db.store.Set(key, &kvstore.Item{Key: key, Version: version})
 		case kvstore.File:
-			// err := kv.fsAdapter.WriteFile(meta.Location, value)
-			err = error(nil)
+			err := db.fsAdapter.WriteFile(meta.Location, value)
 			if err != nil {
 				log.Printf("Error writing file: %v", err)
 			} else {
@@ -136,13 +137,14 @@ func (db *KVStore) Get(args kvstore.GetArgs) (kvstore.GetResponse, bool) {
 	item, exists := db.store.Get(key)
 	firstVersion := item.Version
 	fmt.Println("item==========", item, exists)
+	if !exists {
+		return kvstore.GetResponse{
+			Value: nil,
+		}, false
+	}
 	// 检查是否是重复或过时的请求
 	if !ok || opId > latestOpId {
-		if !exists {
-			return kvstore.GetResponse{
-				Value: nil,
-			}, false
-		}
+		fmt.Println("firstVersion.Meta.Type", firstVersion)
 		switch firstVersion.Meta.Type {
 		case kvstore.KVObj:
 			return kvstore.GetResponse{
